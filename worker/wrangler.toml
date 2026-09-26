@@ -1,0 +1,45 @@
+# anac-sync — sincronização diária dos dados abertos da ANAC na Cloudflare.
+name = "anac-sync"
+main = "src/workers.js"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cron diário: 06:00 UTC = 03:00 Brasília.
+[[cron_triggers]]
+cron = "0 6 * * *"
+
+# Workflow durável (passos que retomam sozinhos se cair).
+[[workflows]]
+name = "anac-sync-workflow"
+binding = "ANAC_SYNC"
+class_name = "default"
+
+# D1 novo (NÃO usar o D1 `vortex` do app).
+[[d1_databases]]
+binding = "DB"
+database_name = "anac"
+database_id = "f6b29e28-f741-4f04-9c27-d6cb4b202677"
+migrations_dir = "./migrations"
+
+# Vectorize: 1024 dimensões, métrica cosine (bge-m3).
+[[vector_indexes]]
+name = "anac-bge-m3"
+binding = "VECTORIZE"
+dimensions = 1024
+metric = "cosine"
+
+# R2 (prefixo `anac/`).
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "vortex"
+
+# Workers AI (embed + rerank).
+[ai]
+binding = "AI"
+
+[vars]
+# Nenhuma credencial aqui — só config. Segredos via `wrangler secret`/.env.
+ANAC_BASE = "https://sistemas.anac.gov.br/dadosabertos"
+
+[observability]
+enabled = true
