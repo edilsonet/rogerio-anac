@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "anac-sync" generated at 2026-09-26T20:22:34.671Z.

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dados ANAC · Controle</title>
+<style>
+  :root { --fundo:#f8fafc; --cartao:#fff; --texto:#1e293b; --suave:#64748b; --borda:#e2e8f0;
+          --ok:#16a34a; --okf:#dcfce7; --alerta:#b45309; --alertaf:#fef3c7; --erro:#dc2626; --errof:#fee2e2; --azul:#4f46e5; --azulf:#e0e7ff; }
+  @media (prefers-color-scheme: dark) { :root { --fundo:#0f172a; --cartao:#1e293b; --texto:#e2e8f0; --suave:#94a3b8;
+          --borda:#334155; --okf:#14532d; --alertaf:#451a03; --errof:#450a0a; --azulf:#1e1b4b; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--fundo); color:var(--texto); font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif }
+  main { max-width:1150px; margin:0 auto; padding:20px 16px 40px }
+  h1 { margin:0; font-size:24px } h2 { font-size:17px; margin:26px 0 10px } h3 { margin:0 0 6px; font-size:14.5px }
+  .topo { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between }
+  .sub { color:var(--suave); font-size:13px }
+  .selo { padding:4px 11px; border-radius:999px; font-weight:700; font-size:13px; background:var(--borda); color:var(--suave) }
+  .selo.ok { background:var(--okf); color:var(--ok) } .selo.alerta { background:var(--alertaf); color:var(--alerta) }
+  .selo.erro { background:var(--errof); color:var(--erro) } .selo.azul { background:var(--azulf); color:var(--azul) }
+  .grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px }
+  .cartao { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:12px 14px }
+  .num { font-size:26px; font-weight:700; margin:2px 0 } .det { color:var(--suave); font-size:13px }
+  .barra { height:10px; background:var(--borda); border-radius:999px; overflow:hidden; margin:8px 0 2px }
+  .barra div { height:100%; width:100%; background:linear-gradient(90deg,#667eea,#764ba2); transform-origin:left; transform:scaleX(0); transition:transform .6s }
+  table { width:100%; border-collapse:collapse; font-size:13.5px } th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--borda) }
+  th { color:var(--suave); font-weight:600 } .tabela { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; overflow:auto; max-height:360px }
+  .etapas { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px }
+  .etapa { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 12px }
+  .etapa.atual { border-color:var(--azul); box-shadow:0 0 0 1px var(--azul) } .etapa b { display:block; font-size:14.5px }
+  .etapa .nota { color:var(--suave); font-size:12.5px; margin-top:4px; word-break:break-word }
+  .busca { display:flex; gap:8px; flex-wrap:wrap } .busca input { flex:1; min-width:220px; padding:9px 11px; border-radius:8px; border:1px solid var(--borda); background:var(--cartao); color:var(--texto); font-size:15px }
+  .busca button { padding:9px 16px; border-radius:8px; border:0; background:var(--azul); color:#fff; font-weight:600; cursor:pointer }
+  .res { margin-top:10px; font-size:13.5px } .res li { margin-bottom:6px }
+  .filtros { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 8px; font-size:14px } .filtros label { display:flex; gap:6px; align-items:center; cursor:pointer }
+  .tempo { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:4px 14px; max-height:460px; overflow:auto }
+  .ev { display:grid; grid-template-columns:120px 70px 1fr; gap:10px; padding:6px 0; border-bottom:1px solid var(--borda); font-size:13.5px } .ev:last-child { border-bottom:0 }
+  .tag { font-size:11px; font-weight:700; text-transform:uppercase; padding:1px 6px; border-radius:6px; text-align:center; height:fit-content; background:var(--borda) }
+  .tag.passo, .tag.commit { background:var(--okf); color:var(--ok) } .tag.loop { background:var(--azulf); color:var(--azul) } .tag.erro { background:var(--errof); color:var(--erro) }
+  .vazio { color:var(--suave); font-size:13.5px } .erro-txt { color:var(--erro); font-size:13px; word-break:break-word }
+  @media (max-width:560px) { .ev { grid-template-columns:1fr; gap:2px } }
+</style>
+</head>
+<body>
+<main>
+  <div class="topo">
+    <div><h1>Dados abertos ANAC · controle</h1><div id="sub" class="sub">carregando…</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span id="seloPlano" class="selo">plano…</span><span id="seloLoop" class="selo">loop…</span></div>
+  </div>
+
+  <h2>Pipeline na Cloudflare</h2>
+  <div class="grade">
+    <div class="cartao"><h3>1. Download (R2)</h3><div id="r2n" class="num">—</div><div id="r2d" class="det"></div></div>
+    <div class="cartao"><h3>2. Ingestão (D1 "anac")</h3><div id="d1n" class="num">—</div><div id="d1d" class="det"></div></div>
+    <div class="cartao"><h3>3. Embedding (Vectorize)</h3><div id="vn" class="num">—</div><div class="barra" aria-hidden="true"><div id="vbar"></div></div><div id="vd" class="det"></div></div>
+    <div class="cartao"><h3>4. Worker diário (cron)</h3><div id="wn" class="num">—</div><div id="wd" class="det"></div></div>
+  </div>
+
+  <h2>Cargas por arquivo</h2>
+  <div class="tabela"><table><thead><tr><th>Arquivo</th><th>Data</th><th>Linhas</th><th>Status</th><th>Erro</th></tr></thead><tbody id="cargas"></tbody></table></div>
+
+  <h2>Tabelas no D1</h2>
+  <div class="tabela"><table><thead><tr><th>Tabela</th><th>Linhas</th></tr></thead><tbody id="tabelas"></tbody></table></div>
+
+  <h2>Testar a busca (vetor + rerank)</h2>
+  <div class="cartao">
+    <form class="busca" id="formBusca"><input id="q" placeholder="ex.: heliponto com operação noturna em Belém" aria-label="Pergunta"><button type="submit">Buscar</button></form>
+    <div id="res" class="res vazio">A busca funciona quando a etapa 9 estiver pronta.</div>
+  </div>
+
+  <h2>Etapas do loop</h2>
+  <div id="etapas" class="etapas"></div>
+
+  <h2>Linha do tempo</h2>
+  <div class="filtros" id="filtros">
+    <label><input type="checkbox" value="passo" checked> Passos</label>
+    <label><input type="checkbox" value="commit" checked> Commits</label>
+    <label><input type="checkbox" value="loop" checked> Rodadas</label>
+    <label><input type="checkbox" value="qwen" checked> Ações do Qwen</label>
+  </div>
+  <div id="tempo" class="tempo"></div>
+  <p class="sub">Atualiza a cada 30 s (dados da nuvem a cada 1 min) · projeto C:\Projetos\anac-dados</p>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const hora = (iso) => { const d = new Date(iso); return isNaN(d) ? (iso || '') : d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+const naoCriado = (x) => x && (x.naoExiste || (x.erro && /not found|not_found|10007|10006|Not Found|não encontrad|404/i.test(x.erro)));
+let ultimo = null;
+
+function cartao(numId, detId, v, fmt) {
+  if (!v) return;
+  if (naoCriado(v)) { $(numId).textContent = 'ainda não criado'; $(numId).style.fontSize = '17px'; $(detId).textContent = 'o loop cria nas primeiras etapas'; return; }
+  if (v.erro) { $(numId).textContent = 'erro'; $(detId).innerHTML = `<span class="erro-txt">${esc(v.erro)}</span>`; return; }
+  $(numId).style.fontSize = ''; fmt(v);
+}
+
+async function atualizar() {
+  try {
+    const r = await fetch('/dados.json', { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = ultimo = await r.json(); const n = d.nuvem; const p = d.progresso;
+    $('sub').textContent = `${p.existe ? p.status : 'loop ainda não iniciado'} · atualizado ${hora(d.gerado)} · nuvem lida ${hora(d.nuvemHora)}`;
+    const pl = n.plano; const sp = $('seloPlano');
+    if (pl.erro) { sp.textContent = 'plano: erro'; sp.className = 'selo erro'; }
+    else { sp.textContent = pl.workersPago ? 'Workers Paid ativo' : 'Workers no plano gratuito'; sp.className = 'selo ' + (pl.workersPago ? 'ok' : 'alerta'); sp.title = pl.assinaturas.join(', '); }
+    const sl = $('seloLoop'); const st = p.status || '';
+    sl.textContent = /CONCLUIDO/.test(st) ? 'loop concluído' : /PARADO/.test(st) ? 'loop parado' : d.loop ? 'loop rodando' : 'loop desligado';
+    sl.className = 'selo ' + (/CONCLUIDO/.test(st) ? 'ok' : /PARADO/.test(st) ? 'alerta' : d.loop ? 'azul' : '');
+
+    cartao('r2n', 'r2d', n.r2, (v) => { $('r2n').textContent = `${v.arquivos} arquivos`; $('r2d').textContent = v.arquivos ? `${v.mb} MB · último ${hora(v.ultimo)} · ${Object.keys(v.pastas).length} pastas` : 'nada baixado ainda'; });
+    cartao('d1n', 'd1d', n.d1, (v) => { const tot = v.tabelas.reduce((s, t) => s + (t.linhas || 0), 0); $('d1n').textContent = `${tot.toLocaleString('pt-BR')} linhas`; $('d1d').textContent = `${v.tabelas.length} tabelas · ${v.tamanhoKB.toLocaleString('pt-BR')} KB`; });
+    cartao('vn', 'vd', n.vector, (v) => { $('vn').textContent = `${(v.vetores || 0).toLocaleString('pt-BR')} vetores`; $('vbar').style.transform = `scaleX(${Math.min(1, (v.usoPct || 0) / 100)})`; $('vd').textContent = `${v.dimensoes} dimensões · ${v.usoPct}% dos 10 milhões incluídos · bge-m3`; });
+    cartao('wn', 'wd', n.worker, (v) => { $('wn').textContent = v.http === 200 ? 'no ar' : `HTTP ${v.http}`; $('wd').textContent = v.dados ? JSON.stringify(v.dados).slice(0, 160) : (v.texto || ''); });
+
+    const cg = n.d1 && Array.isArray(n.d1.cargas) ? n.d1.cargas : [];
+    $('cargas').innerHTML = cg.length ? cg.map((c) => `<tr><td>${esc(c.arquivo || c.nome || JSON.stringify(c).slice(0, 60))}</td><td>${esc(hora(c.data || c.quando || c.criado_em))}</td><td>${esc(c.linhas ?? '')}</td><td>${esc(c.status ?? '')}</td><td class="erro-txt">${esc(c.erro ?? '')}</td></tr>`).join('') : '<tr><td colspan="5" class="vazio">nenhuma carga registrada ainda</td></tr>';
+    const tb = n.d1 && Array.isArray(n.d1.tabelas) ? n.d1.tabelas : [];
+    $('tabelas').innerHTML = tb.length ? tb.map((t) => `<tr><td>${esc(t.tabela)}</td><td>${t.linhas === null ? '?' : t.linhas.toLocaleString('pt-BR')}</td></tr>`).join('') : '<tr><td colspan="2" class="vazio">nenhuma tabela ainda</td></tr>';
+
+    let atual = false;
+    $('etapas').innerHTML = d.etapas.map((nome, i) => {
+      const e = p.etapas[String(i + 1)] || { marca: ' ', texto: '' };
+      let cls = '', est = 'pendente', selo = '';
+      if (e.marca === 'x') { est = 'feita'; selo = 'ok'; } else if (e.marca === '~') { est = 'parcial'; selo = 'alerta'; }
+      if (e.marca !== 'x' && !atual && p.existe) { atual = true; cls = 'atual'; if (e.marca === ' ') { est = 'em andamento'; selo = 'azul'; } }
+      return `<div class="etapa ${cls}"><b>${i + 1}. ${esc(nome)}</b><span class="selo ${selo}">${est}</span>${e.texto ? `<div class="nota">${esc(e.texto.slice(0, 160))}</div>` : ''}</div>`;
+    }).join('');
+    desenhaTempo();
+  } catch (e) { $('sub').innerHTML = `<span class="erro-txt">Falha ao ler os dados: ${esc(e.message)}</span>`; }
+}
+function desenhaTempo() {
+  if (!ultimo) return;
+  const ativos = [...document.querySelectorAll('#filtros input:checked')].map((i) => i.value).concat('erro');
+  const ev = ultimo.tempo.filter((e) => ativos.includes(e.tipo));
+  $('tempo').innerHTML = ev.length ? ev.map((e) => `<div class="ev"><span class="sub">${hora(e.quando)}</span><span class="tag ${e.tipo}">${e.tipo}</span><span>${esc(e.texto)}</span></div>`).join('') : '<div class="vazio" style="padding:10px 0">Nada ainda.</div>';
+}
+$('filtros').addEventListener('change', desenhaTempo);
+$('formBusca').addEventListener('submit', async (ev) => {
+  ev.preventDefault(); const q = $('q').value.trim(); if (!q) return;
+  $('res').className = 'res'; $('res').textContent = 'buscando…';
+  try {
+    const r = await fetch('/busca?q=' + encodeURIComponent(q)); const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = null; }
+    if (!r.ok || !j) throw new Error(r.ok ? 'resposta não é JSON' : `HTTP ${r.status}: ${t.slice(0, 120)}`);
+    const itens = j.resultados || j.results || j.dados || [];
+    $('res').innerHTML = itens.length ? '<ol>' + itens.map((x) => `<li>${esc(x.texto || x.text || JSON.stringify(x).slice(0, 200))} <span class="sub">${esc(x.score ?? x.pontuacao ?? '')} · ${esc(x.fonte || x.conjunto || '')}</span></li>`).join('') + '</ol>' : '<span class="vazio">nenhum resultado</span>';
+  } catch (e) { $('res').innerHTML = `<span class="erro-txt">${esc(e.message)} — a rota /busca existe só depois da etapa 9.</span>`; }
+});
+atualizar(); setInterval(atualizar, 30000);
+</script>
+</body>
+</html>
