@@ -1,0 +1,17 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env*
+logs/
+*.log
+*.bak_*
+
+# arquivos criados por engano quando o Qwen usa sintaxe PowerShell no cmd.exe
+$null*
+plano_out.txt
+logs/
+
+
+# lixo que o Qwen deixa (loop 26/09): fora do git e do auto-commit
+tmp_*
+*.tsbuildinfo
